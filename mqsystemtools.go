@@ -1,4 +1,4 @@
-package systemtoolsmq
+package mqsystemtools
 
 import (
 	"log"
