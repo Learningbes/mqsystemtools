@@ -93,42 +93,14 @@ func CreateRConsumer(conn *amqp.Connection, exhangeName, queueName string) (*RCo
 	}, nil
 }
 
-func failOnError(err error, msg string) {
-	if err != nil {
-		log.Panicf("%s: %s", msg, err)
-	}
-}
-
 // SIMPLE FANOUT SENDER
-type RSender struct {
-	ch     *amqp.Channel
-	exName string
-}
-
-func (rs *RSender) Push(message string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	body := message
-	err := rs.ch.PublishWithContext(ctx,
-		rs.exName, // exchange
-		"",        // routing key
-		false,     // mandatory
-		false,     // immediate
-		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        []byte(body),
-		},
-	)
-	failOnError(err, "Failed to publish a message")
-	log.Printf(" [x] Sent %s", body)
-	return nil
-}
-
-func CreateRSender(conn *amqp.Connection, exchangeName string) *RSender {
+func Push(conn *amqp.Connection, exchangeName string, message string) error {
 
 	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
+	if err != nil {
+		log.Println("Failed to open a channel")
+		return err
+	}
 	err = ch.ExchangeDeclare(
 		exchangeName, // name
 		"fanout",     // type
@@ -138,11 +110,33 @@ func CreateRSender(conn *amqp.Connection, exchangeName string) *RSender {
 		false,        // no-wait
 		nil,          // arguments
 	)
-	failOnError(err, "Failed to declare an exchange")
-	return &RSender{
-		ch:     ch,
-		exName: exchangeName,
+	if err != nil {
+		log.Println("Failed to declare an exchange")
+		return err
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	body := message
+	err = ch.PublishWithContext(ctx,
+		exchangeName, // exchange
+		"",           // routing key
+		false,        // mandatory
+		false,        // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        []byte(body),
+		},
+	)
+
+	if err != nil {
+		log.Println("Failed to publish a message")
+		return err
+	}
+
+	log.Printf("Sent message to %s. PAYLOAD: %s", exchangeName, body)
+	return nil
 }
 
 // UTILS
