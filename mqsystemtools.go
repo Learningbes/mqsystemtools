@@ -39,7 +39,7 @@ func (r *RConsumer) Listen(handler EventHandler) error {
 		}
 	}()
 
-	log.Printf(" [*] Waiting for logs. To exit press CTRL+C")
+	log.Printf("System is operational. Ready to receive messages.")
 	<-forever
 
 	return nil
@@ -135,7 +135,7 @@ func Push(conn *amqp.Connection, exchangeName string, message string) error {
 		return err
 	}
 
-	log.Printf("Sent message to %s. PAYLOAD: %s", exchangeName, body)
+	log.Printf("Sent message to \"%s\" exchange. PAYLOAD: %s", exchangeName, body)
 	return nil
 }
 
