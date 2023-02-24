@@ -15,7 +15,9 @@ type RConsumer struct {
 	q  amqp.Queue
 }
 
-func (r *RConsumer) Listen() error {
+type EventHandler func([]byte)
+
+func (r *RConsumer) Listen(handler EventHandler) error {
 	msgs, err := r.ch.Consume(
 		r.q.Name, // queue
 		"",       // consumer
@@ -33,7 +35,7 @@ func (r *RConsumer) Listen() error {
 
 	go func() {
 		for d := range msgs {
-			log.Printf(" [x] %s", d.Body)
+			handler(d.Body)
 		}
 	}()
 
